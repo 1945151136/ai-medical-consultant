@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-data/
+
+# Logs
+*.log
+logs/
+
+# Coverage
+coverage/
+
+# Python (OCR service)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Uploads (dev)
+uploads/
+tmp/

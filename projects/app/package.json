@@ -1,0 +1,35 @@
+{
+  "name": "@medical/app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "医疗智能问诊平台 - 主应用",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf .next dist"
+  },
+  "dependencies": {
+    "@chakra-ui/react": "^2.8.0",
+    "@emotion/react": "^11.13.0",
+    "@emotion/styled": "^11.13.0",
+    "@medical/global": "workspace:*",
+    "@medical/service": "workspace:*",
+    "@medical/web": "workspace:*",
+    "framer-motion": "^11.3.0",
+    "mongodb": "6.20.0",
+    "next": "^14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "react-icons": "^5.2.0",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.5.0"
+  }
+}

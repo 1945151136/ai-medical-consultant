@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>人体健康三维可视化 - 医疗病历管理系统</title>
+  <style>
+    :root {
+      --color-healthy:  #229955;
+      --color-watch:    #e6b020;
+      --color-abnormal: #dd3333;
+      --bg:             #f5f6f8;
+      --panel-bg:       rgba(255,255,255,0.92);
+      --text:           #2d3748;
+      --text-secondary: #718096;
+      --shadow:         0 2px 12px rgba(0,0,0,0.08);
+      --radius:         12px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                   "Microsoft YaHei", "Helvetica Neue", sans-serif;
+      background: var(--bg);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ========== 全屏Three.js画布 ========== */
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+    #canvas-container canvas { display: block; }
+
+    /* ========== 顶部标题栏 ========== */
+    .header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 10;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    .header > * { pointer-events: auto; }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      background: var(--panel-bg);
+      padding: 10px 18px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header-title .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--color-healthy);
+      display: inline-block;
+    }
+
+    /* ========== 左侧部位状态面板 ========== */
+    .status-panel {
+      position: fixed;
+      left: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+      background: var(--panel-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 130px;
+    }
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+      font-size: 13px;
+      color: var(--text);
+      border: 2px solid transparent;
+    }
+    .status-item:hover { background: #f7fafc; }
+    .status-item.active {
+      border-color: #cbd5e0;
+      background: #edf2f7;
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.04);
+    }
+    .status-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+
+    /* ========== 右侧GLB加载按钮 ========== */
+    .action-panel {
+      position: fixed;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+      background: var(--panel-bg);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .btn:hover { background: #edf2f7; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+    .btn-reset { color: var(--color-healthy); }
+
+    /* ========== 底部图例 + 提示 ========== */
+    .footer {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 10;
+      padding: 12px 24px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      pointer-events: none;
+      flex-wrap: wrap;
+    }
+    .footer > * { pointer-events: auto; }
+    .footer-hint {
+      font-size: 13px;
+      color: var(--text-secondary);
+      background: var(--panel-bg);
+      padding: 8px 16px;
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      letter-spacing: 0.5px;
+    }
+    .legend {
+      display: flex;
+      gap: 16px;
+      background: var(--panel-bg);
+      padding: 8px 18px;
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .legend-item:hover { transform: scale(1.05); }
+    .legend-swatch {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ========== Loading遮罩 ========== */
+    .loading-overlay {
+      position: fixed; inset: 0;
+      z-index: 100;
+      background: rgba(245,246,248,0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      transition: opacity 0.4s, visibility 0.4s;
+    }
+    .loading-overlay.hidden {
+      opacity: 0; visibility: hidden; pointer-events: none;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #4299e1;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      letter-spacing: 0.5px;
+    }
+
+    /* ========== 提示toast ========== */
+    .toast {
+      position: fixed;
+      top: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 200;
+      background: #2d3748;
+      color: #fff;
+      padding: 10px 22px;
+      border-radius: 20px;
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+
+    /* ========== 响应式 ========== */
+    @media (max-width: 768px) {
+      .status-panel { left: 8px; padding: 10px 8px; gap: 2px; min-width: auto; }
+      .status-item { padding: 6px 8px; font-size: 11px; gap: 6px; }
+      .action-panel { right: 8px; gap: 6px; }
+      .btn { padding: 8px 12px; font-size: 11px; }
+      .header { padding: 10px 12px; }
+      .header-title { font-size: 15px; padding: 8px 12px; }
+      .footer { padding: 8px 12px 12px; gap: 10px; }
+      .footer-hint { font-size: 11px; padding: 6px 12px; }
+      .legend { gap: 10px; padding: 6px 12px; }
+      .legend-item { font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========== Loading 遮罩 ========== -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">正在加载人体模型…</div>
+  </div>
+
+  <!-- ========== Toast 提示 ========== -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ========== Three.js 画布容器 ========== -->
+  <div id="canvas-container"></div>
+
+  <!-- ========== 顶部标题 ========== -->
+  <div class="header">
+    <div class="header-title">
+      <span class="dot" id="header-dot"></span>
+      人体健康可视化
+    </div>
+  </div>
+
+  <!-- ========== 左侧部位状态面板 ========== -->
+  <div class="status-panel" id="status-panel">
+    <div class="status-item" data-part="head">
+      <span class="status-dot" style="background:#229955"></span> 头部
+    </div>
+    <div class="status-item" data-part="torso">
+      <span class="status-dot" style="background:#229955"></span> 躯干
+    </div>
+    <div class="status-item" data-part="leftArm">
+      <span class="status-dot" style="background:#229955"></span> 左臂
+    </div>
+    <div class="status-item" data-part="rightArm">
+      <span class="status-dot" style="background:#229955"></span> 右臂
+    </div>
+    <div class="status-item" data-part="leftLeg">
+      <span class="status-dot" style="background:#229955"></span> 左腿
+    </div>
+    <div class="status-item" data-part="rightLeg">
+      <span class="status-dot" style="background:#229955"></span> 右腿
+    </div>
+  </div>
+
+  <!-- ========== 右侧操作按钮 ========== -->
+  <div class="action-panel">
+    <button class="btn" id="btn-load-glb" title="加载poly.pizza下载的GLB模型">
+      📁 加载GLB模型
+    </button>
+    <button class="btn btn-reset" id="btn-reset" title="恢复全部为健康状态">
+      🔄 重置全部健康
+    </button>
+    <input type="file" id="glb-file-input" accept=".glb,.gltf" style="display:none">
+  </div>
+
+  <!-- ========== 底部图例 + 提示 ========== -->
+  <div class="footer">
+    <div class="footer-hint">🖱️ 拖拽旋转 · 滚轮缩放 · 点击部位查看</div>
+    <div class="legend">
+      <div class="legend-item" data-status="healthy">
+        <span class="legend-swatch" style="background:#229955"></span> 健康
+      </div>
+      <div class="legend-item" data-status="watch">
+        <span class="legend-swatch" style="background:#e6b020"></span> 观察中
+      </div>
+      <div class="legend-item" data-status="abnormal">
+        <span class="legend-swatch" style="background:#dd3333"></span> 异常
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== Three.js Import Map ========== -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    // =====================================================================
+    //  常量 & 配置
+    // =====================================================================
+
+    /** 健康状态配色 */
+    const HEALTH_COLORS = {
+      healthy:  '#229955', // 绿色：健康
+      watch:    '#e6b020', // 黄色：观察中
+      abnormal: '#dd3333', // 红色：异常
+    };
+
+    /** 6个身体部位标识 */
+    const BODY_PARTS = ['head', 'torso', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+
+    /** 部位中文名 */
+    const PART_LABELS = {
+      head: '头部', torso: '躯干',
+      leftArm: '左臂', rightArm: '右臂',
+      leftLeg: '左腿', rightLeg: '右腿',
+    };
+
+    // =====================================================================
+    //  DOM 引用缓存
+    // =====================================================================
+
+    const container    = document.getElementById('canvas-container');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const loadingText  = document.getElementById('loading-text');
+    const toastEl      = document.getElementById('toast');
+    const statusPanel  = document.getElementById('status-panel');
+    const headerDot    = document.getElementById('header-dot');
+
+    // =====================================================================
+    //  1. 场景初始化
+    // =====================================================================
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#e8ecf1');
+    scene.fog = new THREE.Fog('#e8ecf1', 4, 18);
+
+    const camera = new THREE.PerspectiveCamera(
+      42,                                    // FOV
+      container.clientWidth / container.clientHeight,
+      0.1,                                   // near
+      50                                     // far
+    );
+    camera.position.set(0.6, 0.9, 3.8);
+    camera.lookAt(0, 0.75, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    container.appendChild(renderer.domElement);
+
+    // =====================================================================
+    //  2. 光照系统 —— 柔和医疗风格
+    // =====================================================================
+
+    // 环境光：提供基础柔和照明
+    const ambientLight = new THREE.AmbientLight('#c8d6e5', 1.8);
+    scene.add(ambientLight);
+
+    // 主平行光：模拟柔和顶光（带阴影）
+    const keyLight = new THREE.DirectionalLight('#ffffff', 3.5);
+    keyLight.position.set(2, 5, 3);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width  = 1024;
+    keyLight.shadow.mapSize.height = 1024;
+    keyLight.shadow.camera.near   = 0.5;
+    keyLight.shadow.camera.far    = 20;
+    keyLight.shadow.camera.left   = -3;
+    keyLight.shadow.camera.right  =  3;
+    keyLight.shadow.camera.top    =  3;
+    keyLight.shadow.camera.bottom = -3;
+    keyLight.shadow.bias = -0.0001;
+    keyLight.shadow.normalBias = 0.02;
+    scene.add(keyLight);
+
+    // 弱补光：从前方偏下打来，减少阴影过暗
+    const fillLight = new THREE.DirectionalLight('#d4e0f0', 1.5);
+    fillLight.position.set(-1, 1.2, 2);
+    scene.add(fillLight);
+
+    // 微弱背光：勾勒轮廓
+    const rimLight = new THREE.DirectionalLight('#ffffff', 0.7);
+    rimLight.position.set(0, 1.2, -2.5);
+    scene.add(rimLight);
+
+    // =====================================================================
+    //  3. 控制器 —— 旋转 + 缩放
+    // =====================================================================
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 0.78, 0);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.minDistance = 1.2;
+    controls.maxDistance = 7;
+    controls.maxPolarAngle = Math.PI * 0.72;  // 限制角度，避免看到地底
+    controls.minPolarAngle = 0.3;
+    controls.mouseButtons = {
+      LEFT:  THREE.MOUSE.ROTATE,
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT: THREE.MOUSE.PAN,
+    };
+    controls.touches = {
+      ONE:   THREE.TOUCH.ROTATE,
+      TWO:   THREE.TOUCH.DOLLY_PAN,
+    };
+    controls.update();
+
+    // =====================================================================
+    //  4. 地面参考面（医疗风格柔和阴影接收面）
+    // =====================================================================
+
+    const groundGeo = new THREE.PlaneGeometry(20, 20);
+    const groundMat = new THREE.MeshStandardMaterial({
+      color: '#e8ecf1',
+      roughness: 0.95,
+      metalness: 0,
+    });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.55;
+    ground.receiveShadow = true;
+    ground.name = 'ground';
+    scene.add(ground);
+
+    // =====================================================================
+    //  5. 程序化人体模型（内置兜底，无GLB时使用）
+    // =====================================================================
+
+    /** 所有身体部位Group的引用 Map<partName, THREE.Group> */
+    const bodyPartGroups = new Map();
+
+    /** 当前各部位健康状态 */
+    const partStatus = new Map();
+
+    /** 所有可被射线检测的mesh列表 */
+    const clickableMeshes = [];
+
+    /** 人体模型根节点 */
+    const humanRoot = new THREE.Group();
+    humanRoot.name = 'humanRoot';
+    scene.add(humanRoot);
+
+    /**
+     * 创建单个部位的标准材质
+     * 使用 MeshStandardMaterial，高粗糙度 = 哑光无强反光
+     */
+    function createBodyMaterial(hexColor) {
+      return new THREE.MeshStandardMaterial({
+        color: new THREE.Color(hexColor),
+        roughness: 0.88,
+        metalness: 0.02,
+      });
+    }
+
+    /**
+     * 构建程序化人体模型
+     * 结构：head / torso / leftArm / rightArm / leftLeg / rightLeg
+     */
+    function buildProceduralHuman() {
+      // 清空
+      while (humanRoot.children.length > 0) {
+        humanRoot.remove(humanRoot.children[0]);
+      }
+      bodyPartGroups.clear();
+      clickableMeshes.length = 0;
+
+      const defaultColor = HEALTH_COLORS.healthy;
+
+      // ---- 辅助：创建部位Group ----
+      function createPartGroup(partName) {
+        const group = new THREE.Group();
+        group.name = partName;
+        group.userData = { bodyPart: partName };
+        bodyPartGroups.set(partName, group);
+        partStatus.set(partName, 'healthy');
+        humanRoot.add(group);
+        return group;
+      }
+
+      // ---- 辅助：添加mesh到group并注册射线检测 ----
+      function addMesh(group, geometry, material, pos, rot) {
+        const mesh = new THREE.Mesh(geometry, material);
+        if (pos) mesh.position.copy(pos);
+        if (rot) mesh.rotation.copy(rot);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.userData = { bodyPart: group.userData.bodyPart };
+        group.add(mesh);
+        clickableMeshes.push(mesh);
+        return mesh;
+      }
+
+      // ===== 头部 (head) =====
+      const headGroup = createPartGroup('head');
+      const headMat = createBodyMaterial(defaultColor);
+      // 头颅
+      addMesh(headGroup, new THREE.SphereGeometry(0.12, 32, 28), headMat,
+        new THREE.Vector3(0, 1.62, 0));
+      // 脖子
+      addMesh(headGroup, new THREE.CylinderGeometry(0.045, 0.055, 0.1, 20), headMat,
+        new THREE.Vector3(0, 1.46, 0));
+
+      // ===== 躯干 (torso) =====
+      const torsoGroup = createPartGroup('torso');
+      const torsoMat = createBodyMaterial(defaultColor);
+      // 胸腔（上大下小的圆台用两个半截模拟）
+      addMesh(torsoGroup, new THREE.CylinderGeometry(0.17, 0.19, 0.22, 24), torsoMat,
+        new THREE.Vector3(0, 1.32, 0));
+      // 腹部
+      addMesh(torsoGroup, new THREE.CylinderGeometry(0.16, 0.18, 0.22, 24), torsoMat,
+        new THREE.Vector3(0, 1.10, 0));
+      // 骨盆
+      addMesh(torsoGroup, new THREE.CylinderGeometry(0.17, 0.16, 0.16, 24), torsoMat,
+        new THREE.Vector3(0, 0.90, 0));
+
+      // ===== 左臂 (leftArm) =====
+      const leftArmGroup = createPartGroup('leftArm');
+      const leftArmMat = createBodyMaterial(defaultColor);
+      // 左上臂
+      addMesh(leftArmGroup, new THREE.CapsuleGeometry(0.05, 0.24, 8, 12), leftArmMat,
+        new THREE.Vector3(-0.24, 1.32, 0.04));
+      // 左下臂
+      addMesh(leftArmGroup, new THREE.CapsuleGeometry(0.042, 0.22, 8, 12), leftArmMat,
+        new THREE.Vector3(-0.27, 1.02, 0.06));
+      // 左手
+      addMesh(leftArmGroup, new THREE.SphereGeometry(0.05, 16, 12), leftArmMat,
+        new THREE.Vector3(-0.28, 0.78, 0.06));
+
+      // ===== 右臂 (rightArm) =====
+      const rightArmGroup = createPartGroup('rightArm');
+      const rightArmMat = createBodyMaterial(defaultColor);
+      addMesh(rightArmGroup, new THREE.CapsuleGeometry(0.05, 0.24, 8, 12), rightArmMat,
+        new THREE.Vector3(0.24, 1.32, 0.04));
+      addMesh(rightArmGroup, new THREE.CapsuleGeometry(0.042, 0.22, 8, 12), rightArmMat,
+        new THREE.Vector3(0.27, 1.02, 0.06));
+      addMesh(rightArmGroup, new THREE.SphereGeometry(0.05, 16, 12), rightArmMat,
+        new THREE.Vector3(0.28, 0.78, 0.06));
+
+      // ===== 左腿 (leftLeg) =====
+      const leftLegGroup = createPartGroup('leftLeg');
+      const leftLegMat = createBodyMaterial(defaultColor);
+      addMesh(leftLegGroup, new THREE.CapsuleGeometry(0.06, 0.30, 8, 12), leftLegMat,
+        new THREE.Vector3(-0.10, 0.66, 0));
+      addMesh(leftLegGroup, new THREE.CapsuleGeometry(0.052, 0.30, 8, 12), leftLegMat,
+        new THREE.Vector3(-0.10, 0.33, 0));
+      // 左脚
+      addMesh(leftLegGroup, new THREE.BoxGeometry(0.08, 0.05, 0.15, 8, 4, 8), leftLegMat,
+        new THREE.Vector3(-0.10, 0.03, 0.04));
+
+      // ===== 右腿 (rightLeg) =====
+      const rightLegGroup = createPartGroup('rightLeg');
+      const rightLegMat = createBodyMaterial(defaultColor);
+      addMesh(rightLegGroup, new THREE.CapsuleGeometry(0.06, 0.30, 8, 12), rightLegMat,
+        new THREE.Vector3(0.10, 0.66, 0));
+      addMesh(rightLegGroup, new THREE.CapsuleGeometry(0.052, 0.30, 8, 12), rightLegMat,
+        new THREE.Vector3(0.10, 0.33, 0));
+      addMesh(rightLegGroup, new THREE.BoxGeometry(0.08, 0.05, 0.15, 8, 4, 8), rightLegMat,
+        new THREE.Vector3(0.10, 0.03, 0.04));
+    }
+
+    // 初始构建程序化人体
+    buildProceduralHuman();
+
+    // =====================================================================
+    //  5b. GLB模型加载（从poly.pizza下载的分离式人体模型）
+    // =====================================================================
+
+    /**
+     * 根据mesh名称匹配身体部位
+     * 支持常见命名约定的模糊匹配
+     */
+    function matchBodyPart(meshName) {
+      const name = meshName.toLowerCase().replace(/[_\-\s]/g, '');
+
+      // 头部匹配
+      if (/head|tou|skull|cranium/.test(name)) return 'head';
+
+      // 躯干匹配
+      if (/torso|body|chest|trunk|spine|rib|abdomen|pelvis|hip/.test(name) &&
+          !/arm|leg|hand|foot/.test(name)) return 'torso';
+
+      // 左侧 —— 手臂
+      if (/(left|l_|_l$|arml)/.test(name) &&
+          /arm|hand|shoulder|elbow|forearm|wrist|finger|thumb/.test(name)) return 'leftArm';
+
+      // 右侧 —— 手臂
+      if (/(right|r_|_r$|armr)/.test(name) &&
+          /arm|hand|shoulder|elbow|forearm|wrist|finger|thumb/.test(name)) return 'rightArm';
+
+      // 左侧 —— 腿
+      if (/(left|l_|_l$|legl)/.test(name) &&
+          /leg|foot|knee|thigh|calf|ankle|toe/.test(name)) return 'leftLeg';
+
+      // 右侧 —— 腿
+      if (/(right|r_|_r$|legr)/.test(name) &&
+          /leg|foot|knee|thigh|calf|ankle|toe/.test(name)) return 'rightLeg';
+
+      // 位置推断（无明确命名时的兜底策略）
+      return null;
+    }
+
+    /**
+     * 从GLB模型提取部位分组
+     * 将分离式mesh按名称归类到6个部位
+     */
+    function extractPartsFromGLB(gltf) {
+      const partMap = {
+        head: [], torso: [],
+        leftArm: [], rightArm: [],
+        leftLeg: [], rightLeg: [],
+      };
+      const unmatched = [];
+
+      gltf.scene.traverse((child) => {
+        if (!child.isMesh) return;
+        const part = matchBodyPart(child.name);
+        if (part && partMap[part]) {
+          partMap[part].push(child);
+        } else {
+          unmatched.push(child);
+        }
+      });
+
+      return { partMap, unmatched };
+    }
+
+    /**
+     * 替换程序化模型为GLB模型
+     */
+    function replaceWithGLBModel(gltf) {
+      const { partMap, unmatched } = extractPartsFromGLB(gltf);
+
+      // 检查是否找到了足够的部位
+      const foundParts = Object.entries(partMap).filter(([,meshes]) => meshes.length > 0);
+      if (foundParts.length < 4) {
+        console.warn(
+          `GLB模型仅识别到 ${foundParts.length} 个部位（需要≥4），继续使用程序化模型。\n` +
+          `已识别：${foundParts.map(([k]) => PART_LABELS[k]).join('、')}\n` +
+          `未匹配mesh：${unmatched.map(m => m.name).join(', ')}`
+        );
+        return false;
+      }
+
+      // 清空程序化模型
+      while (humanRoot.children.length > 0) {
+        humanRoot.remove(humanRoot.children[0]);
+      }
+      bodyPartGroups.clear();
+      clickableMeshes.length = 0;
+
+      // 为每个已识别部位创建Group并移入对应mesh
+      for (const [partName, meshes] of Object.entries(partMap)) {
+        if (meshes.length === 0) continue;
+
+        const group = new THREE.Group();
+        group.name = partName;
+        group.userData = { bodyPart: partName };
+        bodyPartGroups.set(partName, group);
+        if (!partStatus.has(partName)) partStatus.set(partName, 'healthy');
+        humanRoot.add(group);
+
+        for (const mesh of meshes) {
+          // 从原父节点移除
+          mesh.parent?.remove(mesh);
+          // 应用医疗风格材质
+          mesh.material = createBodyMaterial(HEALTH_COLORS.healthy);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          mesh.userData.bodyPart = partName;
+          group.add(mesh);
+          clickableMeshes.push(mesh);
+        }
+      }
+
+      // 未匹配的mesh放入torso（如果有的话）或单独分组
+      if (unmatched.length > 0 && bodyPartGroups.has('torso')) {
+        const torsoGroup = bodyPartGroups.get('torso');
+        for (const mesh of unmatched) {
+          mesh.parent?.remove(mesh);
+          mesh.material = createBodyMaterial(HEALTH_COLORS.healthy);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          mesh.userData.bodyPart = 'torso';
+          torsoGroup.add(mesh);
+          clickableMeshes.push(mesh);
+        }
+        console.log(`${unmatched.length} 个未匹配mesh已归入躯干：${unmatched.map(m => m.name).join(', ')}`);
+      }
+
+      // 居中模型
+      const box = new THREE.Box3().setFromObject(humanRoot);
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+      humanRoot.position.set(-center.x, -box.min.y, -center.z);
+
+      console.log(
+        `✅ GLB模型加载成功，已识别部位：${foundParts.map(([k]) => PART_LABELS[k]).join('、')}`
+      );
+      return true;
+    }
+
+    /**
+     * 异步加载GLB文件
+     */
+    async function loadGLBModel(urlOrFile) {
+      loadingOverlay.classList.remove('hidden');
+      loadingText.textContent = '正在解析人体模型…';
+
+      const loader = new GLTFLoader();
+
+      try {
+        let gltf;
+
+        if (typeof urlOrFile === 'string') {
+          // URL 加载
+          gltf = await loader.loadAsync(urlOrFile, (progress) => {
+            const pct = Math.round((progress.loaded / progress.total) * 100);
+            loadingText.textContent = `正在下载模型… ${pct}%`;
+          });
+        } else {
+          // File 对象加载（用户从本地选择的文件）
+          const url = URL.createObjectURL(urlOrFile);
+          gltf = await loader.loadAsync(url);
+          URL.revokeObjectURL(url);
+        }
+
+        const success = replaceWithGLBModel(gltf);
+
+        if (success) {
+          updateAllStatusUI();
+          showToast('✅ GLB模型加载成功！');
+        } else {
+          // 恢复程序化模型
+          buildProceduralHuman();
+          updateAllStatusUI();
+          showToast('⚠️ 模型部位识别不足，已恢复内置模型');
+        }
+      } catch (err) {
+        console.error('GLB加载失败：', err);
+        // 确保程序化模型存在
+        if (bodyPartGroups.size === 0) {
+          buildProceduralHuman();
+          updateAllStatusUI();
+        }
+        showToast('❌ 模型加载失败：' + (err.message || '未知错误'));
+      } finally {
+        loadingOverlay.classList.add('hidden');
+      }
+    }
+
+    // =====================================================================
+    //  6. 射线拾取 —— 检测点击身体部位
+    // =====================================================================
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.params.Points.threshold = 0.02;
+    raycaster.params.Line.threshold = 0.02;
+    // 提高射线精度
+    raycaster.far = 10;
+
+    const mouse = new THREE.Vector2();
+
+    /** 当前高亮的部位（用于hover效果） */
+    let hoveredPart = null;
+
+    /**
+     * 从相交对象追溯到身体部位Group
+     * @param {THREE.Intersection} intersect
+     * @returns {{ group: THREE.Group, partName: string } | null}
+     */
+    function resolveBodyPart(intersect) {
+      let obj = intersect.object;
+      // 向上追溯父节点查找身体部位Group
+      while (obj) {
+        if (obj.userData && obj.userData.bodyPart) {
+          return {
+            group: bodyPartGroups.get(obj.userData.bodyPart),
+            partName: obj.userData.bodyPart,
+          };
+        }
+        obj = obj.parent;
+      }
+      return null;
+    }
+
+    /**
+     * 执行射线检测
+     * @returns {{ group: THREE.Group, partName: string, point: THREE.Vector3 } | null}
+     */
+    function raycastBodyPart(event) {
+      // 归一化鼠标坐标
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+
+      const intersects = raycaster.intersectObjects(clickableMeshes, false);
+      if (intersects.length === 0) return null;
+
+      const resolved = resolveBodyPart(intersects[0]);
+      if (!resolved) return null;
+
+      return {
+        ...resolved,
+        point: intersects[0].point.clone(),
+      };
+    }
+
+    // =====================================================================
+    //  7. 部位变色 & 状态管理
+    // =====================================================================
+
+    /**
+     * 修改指定部位的健康状态（颜色）
+     * @param {string} partName - 部位标识
+     * @param {'healthy'|'watch'|'abnormal'} status - 健康状态
+     */
+    function setPartStatus(partName, status) {
+      const group = bodyPartGroups.get(partName);
+      if (!group) return;
+
+      const color = HEALTH_COLORS[status];
+      if (!color) return;
+
+      // 遍历该部位Group下所有子Mesh
+      group.traverse((child) => {
+        if (child.isMesh) {
+          child.material.color.set(color);
+          // 轻微材质变化提示选中
+          child.material.emissive?.set(color);
+          child.material.emissiveIntensity = 0.08;
+        }
+      });
+
+      partStatus.set(partName, status);
+      updateStatusPanelUI();
+      updateHeaderDot();
+    }
+
+    /**
+     * 循环切换部位状态：healthy → watch → abnormal → healthy
+     */
+    function cyclePartStatus(partName) {
+      const current = partStatus.get(partName) || 'healthy';
+      const order = ['healthy', 'watch', 'abnormal'];
+      const nextIdx = (order.indexOf(current) + 1) % order.length;
+      setPartStatus(partName, order[nextIdx]);
+    }
+
+    /**
+     * 重置所有部位为健康状态
+     */
+    function resetAllToHealthy() {
+      for (const partName of BODY_PARTS) {
+        setPartStatus(partName, 'healthy');
+      }
+      updateStatusPanelUI();
+      updateHeaderDot();
+      showToast('✅ 全部部位已重置为健康');
+    }
+
+    // =====================================================================
+    //  8. UI更新
+    // =====================================================================
+
+    /** 更新左侧状态面板 */
+    function updateStatusPanelUI() {
+      const items = statusPanel.querySelectorAll('.status-item');
+      items.forEach((item) => {
+        const partName = item.dataset.part;
+        const status = partStatus.get(partName) || 'healthy';
+        const dot = item.querySelector('.status-dot');
+        if (dot) dot.style.background = HEALTH_COLORS[status];
+      });
+    }
+
+    /** 同步全部UI */
+    function updateAllStatusUI() {
+      updateStatusPanelUI();
+      updateHeaderDot();
+    }
+
+    /** 更新顶部圆点颜色（反映全局最严重状态） */
+    function updateHeaderDot() {
+      const severity = { healthy: 0, watch: 1, abnormal: 2 };
+      let worst = 'healthy';
+      for (const [, status] of partStatus) {
+        if (severity[status] > severity[worst]) worst = status;
+      }
+      headerDot.style.background = HEALTH_COLORS[worst];
+    }
+
+    /** Toast提示 */
+    let toastTimer;
+    function showToast(msg, duration = 2000) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove('show'), duration);
+    }
+
+    // =====================================================================
+    //  9. 事件绑定
+    // =====================================================================
+
+    /**
+     * Canvas点击 —— 射线拾取 + 循环切换部位颜色
+     */
+    function onCanvasClick(event) {
+      // 忽略UI面板区域点击
+      if (event.target.closest('.status-panel, .action-panel, .header, .footer, .btn, .legend')) return;
+
+      const result = raycastBodyPart(event);
+      if (!result) return;
+
+      // 记录最后点击部位（供图例和快捷键使用）
+      lastClickedPart = result.partName;
+
+      cyclePartStatus(result.partName);
+      const status = partStatus.get(result.partName);
+      const label = PART_LABELS[result.partName];
+      const statusLabel = { healthy: '健康', watch: '观察中', abnormal: '异常' };
+      showToast(`${label} → ${statusLabel[status]}`);
+    }
+
+    /**
+     * Canvas鼠标移动 —— Hover高亮
+     */
+    function onCanvasMouseMove(event) {
+      if (event.target.closest('.status-panel, .action-panel, .header, .footer, .btn')) {
+        resetHover();
+        return;
+      }
+
+      const result = raycastBodyPart(event);
+
+      if (result && result.partName !== hoveredPart) {
+        resetHover();
+        hoveredPart = result.partName;
+        // 轻微高亮：增加emissive
+        const group = bodyPartGroups.get(hoveredPart);
+        if (group) {
+          group.traverse((child) => {
+            if (child.isMesh) {
+              child.material._savedEmissiveIntensity = child.material.emissiveIntensity;
+              child.material.emissiveIntensity = 0.22;
+            }
+          });
+        }
+        renderer.domElement.style.cursor = 'pointer';
+      } else if (!result && hoveredPart) {
+        resetHover();
+      }
+    }
+
+    function resetHover() {
+      if (hoveredPart) {
+        const group = bodyPartGroups.get(hoveredPart);
+        if (group) {
+          group.traverse((child) => {
+            if (child.isMesh && child.material._savedEmissiveIntensity !== undefined) {
+              child.material.emissiveIntensity = child.material._savedEmissiveIntensity;
+              delete child.material._savedEmissiveIntensity;
+            }
+          });
+        }
+        hoveredPart = null;
+      }
+      renderer.domElement.style.cursor = '';
+    }
+
+    /**
+     * 左侧面板点击 —— 同样切换对应部位颜色
+     */
+    statusPanel.addEventListener('click', (event) => {
+      const item = event.target.closest('.status-item');
+      if (!item) return;
+      const partName = item.dataset.part;
+      if (!partName) return;
+      cyclePartStatus(partName);
+      const status = partStatus.get(partName);
+      const label = PART_LABELS[partName];
+      const statusLabel = { healthy: '健康', watch: '观察中', abnormal: '异常' };
+      showToast(`${label} → ${statusLabel[status]}`);
+    });
+
+    // 面板hover高亮对应3D部位
+    statusPanel.addEventListener('mouseenter', (event) => {
+      const item = event.target.closest('.status-item');
+      if (!item) return;
+      item.classList.add('active');
+    }, true);
+
+    statusPanel.addEventListener('mouseleave', (event) => {
+      const item = event.target.closest('.status-item');
+      if (!item) return;
+      item.classList.remove('active');
+    }, true);
+
+    /** 最后被点击/选中的部位（供图例和快捷键使用） */
+    let lastClickedPart = null;
+
+    /**
+     * 图例点击 —— 设置最后选中部位的状态
+     */
+    document.querySelector('.legend').addEventListener('click', (event) => {
+      const item = event.target.closest('.legend-item');
+      if (!item) return;
+      const status = item.dataset.status;
+      if (!status || !lastClickedPart) {
+        if (!lastClickedPart) showToast('请先在人体模型上点击一个部位');
+        return;
+      }
+      setPartStatus(lastClickedPart, status);
+      const label = PART_LABELS[lastClickedPart];
+      const statusLabel = { healthy: '健康', watch: '观察中', abnormal: '异常' };
+      showToast(`${label} → ${statusLabel[status]}`);
+    });
+
+    /**
+     * GLB加载按钮
+     */
+    const glbFileInput = document.getElementById('glb-file-input');
+    document.getElementById('btn-load-glb').addEventListener('click', () => {
+      glbFileInput.click();
+    });
+    glbFileInput.addEventListener('change', (event) => {
+      const file = event.target.files?.[0];
+      if (file) loadGLBModel(file);
+      glbFileInput.value = '';
+    });
+
+    /**
+     * 重置按钮
+     */
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      resetAllToHealthy();
+    });
+
+    /**
+     * 窗口缩放
+     */
+    window.addEventListener('resize', () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    /**
+     * 键盘快捷键
+     */
+    window.addEventListener('keydown', (event) => {
+      switch (event.key.toLowerCase()) {
+        case 'r':
+          resetAllToHealthy();
+          break;
+        case '1':
+          if (lastClickedPart) setPartStatus(lastClickedPart, 'healthy');
+          break;
+        case '2':
+          if (lastClickedPart) setPartStatus(lastClickedPart, 'watch');
+          break;
+        case '3':
+          if (lastClickedPart) setPartStatus(lastClickedPart, 'abnormal');
+          break;
+        case 'f':
+          // 重置视角
+          controls.target.set(0, 0.78, 0);
+          camera.position.set(0.6, 0.9, 3.8);
+          camera.lookAt(0, 0.75, 0);
+          controls.update();
+          showToast('📷 视角已重置');
+          break;
+      }
+    });
+
+    // 注册事件
+    renderer.domElement.addEventListener('click', onCanvasClick);
+    renderer.domElement.addEventListener('mousemove', onCanvasMouseMove);
+    // 触摸事件（移动端）
+    renderer.domElement.addEventListener('touchend', (event) => {
+      if (event.target.closest('.status-panel, .action-panel, .header, .footer, .btn')) return;
+      // 使用最后一次touch位置
+      if (event.changedTouches.length === 1) {
+        const touch = event.changedTouches[0];
+        // 如果位移很小（非滑动），视为点击
+        const result = raycastBodyPart({ clientX: touch.clientX, clientY: touch.clientY });
+        if (!result) return;
+        lastClickedPart = result.partName;
+        cyclePartStatus(result.partName);
+        const status = partStatus.get(result.partName);
+        const label = PART_LABELS[result.partName];
+        const statusLabel = { healthy: '健康', watch: '观察中', abnormal: '异常' };
+        showToast(`${label} → ${statusLabel[status]}`);
+      }
+    });
+
+    // =====================================================================
+    //  10. 动画循环
+    // =====================================================================
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      controls.update();
+
+      // 微弱呼吸动画（仅程序化模型且有部位时）
+      if (bodyPartGroups.size > 0) {
+        const t = performance.now() * 0.001;
+        const breathe = Math.sin(t * 1.2) * 0.003;
+        // 躯干微动模拟呼吸
+        const torso = bodyPartGroups.get('torso');
+        if (torso && torso.children.length > 0) {
+          torso.scale.setScalar(1 + breathe);
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    // =====================================================================
+    //  启动
+    // =====================================================================
+
+    function init() {
+      updateAllStatusUI();
+
+      // 隐藏loading
+      loadingOverlay.classList.add('hidden');
+
+      // 开始渲染
+      animate();
+
+      console.log(
+        '🏥 人体健康三维可视化模块已就绪\n' +
+        '   🖱️ 左键拖拽旋转 | 滚轮缩放 | 右键平移\n' +
+        '   👆 点击身体部位切换健康状态（绿→黄→红→绿）\n' +
+        '   ⌨️ 快捷键: R=重置 F=重置视角 1/2/3=设置选中部位状态\n' +
+        '   📁 点击右侧按钮可加载poly.pizza下载的GLB模型'
+      );
+    }
+
+    init();
+
+    // =====================================================================
+    //  导出到全局（方便调试 & 外部调用）
+    // =====================================================================
+    window.__humanBodyViewer = {
+      setPartStatus,
+      cyclePartStatus,
+      resetAllToHealthy,
+      getPartStatus: (part) => partStatus.get(part),
+      getAllStatus: () => Object.fromEntries(partStatus),
+      loadGLBModel,
+      scene,
+      camera,
+      controls,
+      humanRoot,
+    };
+  </script>
+</body>
+</html>

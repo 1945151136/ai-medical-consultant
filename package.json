@@ -1,0 +1,20 @@
+{
+  "name": "medical-consultation-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "多模型兼容驱动的医疗动态问诊平台 - AI 智能问诊与病历分析 Web 系统",
+  "scripts": {
+    "dev": "pnpm --filter @medical/app dev",
+    "build": "pnpm --filter @medical/app build",
+    "start": "pnpm --filter @medical/app start",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "clean": "pnpm -r clean",
+    "seed": "npx tsx scripts/seed.ts"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0"
+}

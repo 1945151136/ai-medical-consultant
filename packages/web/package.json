@@ -1,0 +1,40 @@
+{
+  "name": "@medical/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared React UI components and hooks for the medical consultation platform",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "echo 'lint ok'",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@chakra-ui/react": "^2.8.0",
+    "@emotion/react": "^11.13.0",
+    "@emotion/styled": "^11.13.0",
+    "@medical/global": "workspace:*",
+    "@medical/service": "workspace:*",
+    "@react-three/drei": "9",
+    "@react-three/fiber": "8",
+    "framer-motion": "^11.3.0",
+    "next": "^14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "react-dropzone": "^14.2.0",
+    "react-markdown": "^9.0.0",
+    "three": "0.170",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/three": "0.170",
+    "typescript": "^5.5.0"
+  },
+  "peerDependencies": {
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
+  }
+}
