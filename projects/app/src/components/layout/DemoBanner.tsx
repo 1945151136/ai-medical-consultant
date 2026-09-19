@@ -35,9 +35,9 @@ export function DemoBanner() {
       <HStack spacing={2} align="flex-start" maxW="960px" mx="auto">
         <Icon as={FiInfo} color="orange.500" boxSize={4} mt="3px" flexShrink={0} />
         <Text fontSize="12.5px" lineHeight="1.5" color="orange.900" flex="1">
-          <b>在线演示环境：</b>
-          可直接体验「AI 智能问诊」与「3D 人体可视化」；病历上传、个人档案等依赖数据库 / 对象存储的功能，
-          请按 README 在本地部署后使用。
+          <b>在线演示环境（免登录）：</b>
+          可直接体验 AI 问诊界面与「3D 人体可视化」；因未配置大模型密钥与数据库，AI 对话回复、病历上传、个人档案等功能，
+          请按 README 在本地部署并配置 API Key 后使用。
         </Text>
         <IconButton
           aria-label="关闭演示提示"

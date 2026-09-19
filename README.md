@@ -18,6 +18,12 @@
 
 <br/>
 
+<a href="https://ai-medical-consultant-hazel.vercel.app"><img src="https://img.shields.io/badge/Live_Demo-ai--medical--consultant--hazel.vercel.app-16A34A?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo"/></a>
+
+> 💡 **在线演示免登录、免数据库**，可直接体验首页、AI 问诊界面（8 阶段进度 + SSE）与 3D 人体可视化；因托管环境未配置大模型密钥与数据库，**AI 对话回复、病历上传解析、个人档案**等功能请按本文档在本地部署并配置 API Key 后完整体验。
+
+<br/>
+
 *An LLM-powered medical consultation platform with an  8-stage progressive triage dialogue engine, SSE streaming,*
 *OCR-based medical-record structuring, an interactive 3D body health map, a unified multi-LLM adapter and WeCom integration.*
 
