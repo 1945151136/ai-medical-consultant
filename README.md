@@ -1,6 +1,52 @@
-# 🏥 医疗智能问诊平台
+# 🏥 AI Medical Consultation Platform · 医疗智能问诊平台
 
-基于大语言模型（LLM）的智能医疗问诊平台，采用递进式多轮对话引擎模拟真实医生问诊流程。支持病历文件自动解析（OCR + AI 结构化提取）、3D 人体健康地图可视化、企业微信集成，适配 DeepSeek / 通义千问 / OpenAI 等多种大模型。
+<div align="center">
+
+**基于大语言模型（LLM）的智能医疗问诊平台** —— 递进式多轮问诊引擎 · 病历 OCR 智能结构化 · 3D 人体健康地图 · 多模型适配 · 企业微信集成
+
+<br/>
+
+![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=nextdotjs&logoColor=white)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-7-47A248?logo=mongodb&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![LLM](https://img.shields.io/badge/LLM-DeepSeek%20%7C%20Qwen%20%7C%20OpenAI-7B68EE)
+![License](https://img.shields.io/badge/License-MIT-green)
+
+<br/>
+
+*An LLM-powered medical consultation platform with an  8-stage progressive triage dialogue engine, SSE streaming,*
+*OCR-based medical-record structuring, an interactive 3D body health map, a unified multi-LLM adapter and WeCom integration.*
+
+</div>
+
+> ⚕️ **免责声明**：本项目仅用于技术学习与交流，**不构成任何医疗诊断或治疗建议**，不能替代专业医生的判断。
+
+## 🌟 项目亮点
+
+- **8 阶段递进式问诊引擎**：主诉采集 → 症状细节 → 病史追问 → 鉴别诊断 → 初步诊断 → 诊疗建议，由会话状态机驱动，基于 **SSE 流式输出**逐字呈现。
+- **统一多模型适配层**：以一套 OpenAI 兼容接口抽象 DeepSeek / 通义千问 / OpenAI，将模型调用、Prompt、上下文管理与业务逻辑解耦，支持运行时切换与熔断。
+- **病历 OCR → 结构化流水线**：PDF / JPG / PNG / DOCX 上传，经 PaddleOCR 识别、LLM 抽取（主诉 / 现病史 / 既往史 / 诊断）与医疗实体标准化。
+- **3D 人体健康地图**：可拖拽旋转、缩放、点击标记的三维人体模型，状态数据由病历分析结果驱动。
+- **隐私合规**：病历自动脱敏（姓名 / 证件号 / 手机号 / 地址）、MinIO 加密存储，遵循 PIPL。
+- **企业微信集成**：自建应用消息收发、OAuth2 免登、AES-256-CBC 加解密。
+
+## 📚 目录
+
+- [✨ 核心功能](#-核心功能)
+- [🏗️ 技术架构](#️-技术架构)
+- [⚠️ 配置 API Key](#️-配置-api-key克隆后必须操作)
+- [🚀 快速开始](#-快速开始)
+- [📖 使用指南](#-使用指南)
+- [📁 项目结构](#-项目结构)
+- [🔧 API 接口](#-api-接口)
+- [⚠️ 免责声明](#-免责声明)
+- [📄 License](#-license)
+
+---
 
 ## ✨ 核心功能
 
@@ -443,4 +489,4 @@ medical-consultation-platform/
 
 ## 📄 License
 
-MIT
+本项目基于 [MIT License](LICENSE) 开源，完整协议见 [LICENSE](LICENSE) 文件。
