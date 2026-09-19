@@ -22,12 +22,14 @@ interface RecordItem {
   dxyArticles?: DxyArticle[]; createdAt: string;
 }
 
+const IS_DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === '1';
+
 export default function RecordsPage() {
   const router = useRouter();
   const toast = useToast();
   const cardBg = useColorModeValue('white', 'gray.700');
   const token = useAuthStore((s) => s.token);
-  const authHeaders = () => token ? { Authorization: `Bearer ${token}` } : {};
+  const authHeaders = (): Record<string, string> => (token ? { Authorization: `Bearer ${token}` } : {});
   const [records, setRecords] = useState<RecordItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,15 +47,24 @@ export default function RecordsPage() {
       const res = await fetch('/api/medical-record/list', { headers: authHeaders() });
       const data = await res.json();
       if (!res.ok && data.error) {
-        setError(data.error);
-        toast({ title: '加载失败', description: data.error, status: 'error', duration: 5000 });
+        // 在线演示环境无数据库：静默显示空状态，不弹错误提示
+        if (!IS_DEMO) {
+          setError(data.error);
+          toast({ title: '加载失败', description: data.error, status: 'error', duration: 5000 });
+        } else {
+          setRecords([]);
+        }
       } else {
         setRecords(data.records || []);
       }
     } catch (err: any) {
-      const msg = '无法连接到服务器，请确认服务已启动';
-      setError(msg);
-      toast({ title: '加载失败', description: msg, status: 'error', duration: 5000 });
+      if (!IS_DEMO) {
+        const msg = '无法连接到服务器，请确认服务已启动';
+        setError(msg);
+        toast({ title: '加载失败', description: msg, status: 'error', duration: 5000 });
+      } else {
+        setRecords([]);
+      }
     }
     finally { setLoading(false); }
   }, [toast]);
@@ -169,7 +180,7 @@ export default function RecordsPage() {
       ) : records.length === 0 ? (
         <Card bg={cardBg}><CardBody><Center py={8}><VStack spacing={3}>
           <Icon as={FiFileText} boxSize={10} color="gray.300" />
-          <Text color="gray.500">暂无病历记录</Text>
+          <Text color="gray.500">{IS_DEMO ? '在线演示未启用数据库，本地部署后可体验病历上传与 AI 解析' : '暂无病历记录'}</Text>
         </VStack></Center></CardBody></Card>
       ) : (
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>

@@ -28,6 +28,17 @@ interface PdfOcrResponse {
 }
 
 /**
+ * 将 Node Buffer 复制到由独立 ArrayBuffer 支撑的 Uint8Array，
+ * 以兼容 DOM BlobPart 类型（规避 Buffer<ArrayBufferLike> 与
+ * ArrayBufferView<ArrayBuffer> 的类型不兼容）。
+ */
+function bufferToBlobPart(buf: Buffer): BlobPart {
+  const bytes = new Uint8Array(buf.length);
+  bytes.set(buf);
+  return bytes;
+}
+
+/**
  * 对图片进行 OCR 识别
  * @param imageBuffer 图片的 Buffer
  * @param fileName 原始文件名
@@ -40,7 +51,7 @@ export async function ocrImage(
 
   const ext = fileName.split('.').pop()?.toLowerCase() || 'jpg';
   const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
-  const blob = new Blob([imageBuffer], { type: mimeType });
+  const blob = new Blob([bufferToBlobPart(imageBuffer)], { type: mimeType });
 
   formData.append('file', blob, fileName);
 
@@ -67,7 +78,7 @@ export async function ocrPdf(
   pdfBuffer: Buffer,
   fileName: string = 'document.pdf'
 ): Promise<PdfOcrResponse> {
-  const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
+  const blob = new Blob([bufferToBlobPart(pdfBuffer)], { type: 'application/pdf' });
   const formData = new FormData();
   formData.append('file', blob, fileName);
 

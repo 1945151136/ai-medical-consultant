@@ -105,6 +105,9 @@ importers:
       react-dropzone:
         specifier: ^14.2.0
         version: 14.4.1(react@18.3.1)
+      react-icons:
+        specifier: ^5.2.0
+        version: 5.7.0(react@18.3.1)
       react-markdown:
         specifier: ^9.0.0
         version: 9.1.0(@types/react@18.3.31)(react@18.3.1)
@@ -130,6 +133,9 @@ importers:
 
   projects/app:
     dependencies:
+      '@chakra-ui/next-js':
+        specifier: ^2.4.2
+        version: 2.4.2(@chakra-ui/react@2.10.10)(@emotion/react@11.14.0)(next@14.2.35)(react@18.3.1)
       '@chakra-ui/react':
         specifier: ^2.8.0
         version: 2.10.10(@emotion/react@11.14.0)(@emotion/styled@11.14.1)(@types/react@18.3.31)(framer-motion@11.18.2)(react-dom@18.3.1)(react@18.3.1)
@@ -166,6 +172,9 @@ importers:
       react-icons:
         specifier: ^5.2.0
         version: 5.7.0(react@18.3.1)
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
       zustand:
         specifier: ^4.5.0
         version: 4.5.7(@types/react@18.3.31)(react@18.3.1)
@@ -288,6 +297,21 @@ packages:
       '@zag-js/element-size': 0.31.1
       copy-to-clipboard: 3.3.3
       framesync: 6.1.2
+      react: 18.3.1
+    dev: false
+
+  /@chakra-ui/next-js@2.4.2(@chakra-ui/react@2.10.10)(@emotion/react@11.14.0)(next@14.2.35)(react@18.3.1):
+    resolution: {integrity: sha512-loo82RyPbMyvJwRhhZVZovut9v2hFBSkqd1vQoNXgMrCRApLwrrttu5Iuodns15gLE3mqI+it5oEhxTtO5DrxA==}
+    peerDependencies:
+      '@chakra-ui/react': '>=2.4.0'
+      '@emotion/react': '>=11'
+      next: '>=13'
+      react: '>=18'
+    dependencies:
+      '@chakra-ui/react': 2.10.10(@emotion/react@11.14.0)(@emotion/styled@11.14.1)(@types/react@18.3.31)(framer-motion@11.18.2)(react-dom@18.3.1)(react@18.3.1)
+      '@emotion/cache': 11.14.0
+      '@emotion/react': 11.14.0(@types/react@18.3.31)(react@18.3.1)
+      next: 14.2.35(react-dom@18.3.1)(react@18.3.1)
       react: 18.3.1
     dev: false
 

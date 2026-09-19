@@ -100,7 +100,7 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
               <FormLabel fontWeight="500" color="gray.700">性别</FormLabel>
               <Select
                 value={gender}
-                onChange={(e) => setGender(e.target.value)}
+                onChange={(e) => setGender(e.target.value as 'male' | 'female' | 'unknown')}
                 borderRadius="lg"
               >
                 {GENDER_OPTIONS.map((opt) => (
@@ -114,7 +114,7 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
               <FormLabel fontWeight="500" color="gray.700">血型</FormLabel>
               <Select
                 value={bloodType}
-                onChange={(e) => setBloodType(e.target.value)}
+                onChange={(e) => setBloodType(e.target.value as 'A' | 'B' | 'AB' | 'O' | 'unknown')}
                 borderRadius="lg"
               >
                 {BLOOD_TYPE_OPTIONS.map((opt) => (

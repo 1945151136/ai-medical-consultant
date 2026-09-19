@@ -60,6 +60,7 @@ export async function extractStructuredData(
         auxiliaryExam: '',
         diagnosis: '',
         treatmentPlan: '',
+        medication: '',
       },
       entities: [],
       confidence: 0,
@@ -97,7 +98,7 @@ function validateSections(sections: any): RecordParseResult['sections'] {
     'medication',
   ];
 
-  const result: RecordParseResult['sections'] = {};
+  const result = {} as RecordParseResult['sections'];
 
   for (const key of validKeys) {
     result[key as keyof RecordParseResult['sections']] =

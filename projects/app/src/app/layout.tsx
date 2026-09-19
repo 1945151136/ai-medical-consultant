@@ -5,6 +5,7 @@ import { CacheProvider } from '@chakra-ui/next-js';
 import theme from '@/styles/theme';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
+import { DemoBanner } from '@/components/layout/DemoBanner';
 
 export default function RootLayout({
   children,
@@ -26,6 +27,7 @@ export default function RootLayout({
             <Sidebar />
             <Box flex="1" display="flex" flexDirection="column">
               <Header />
+              <DemoBanner />
               <Box as="main" flex="1" p={6} overflow="auto">
                 {children}
               </Box>

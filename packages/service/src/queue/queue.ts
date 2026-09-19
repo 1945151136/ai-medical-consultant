@@ -50,8 +50,15 @@ export async function enqueueTask<T>(
   if (queueMode === 'redis') {
     try {
       const { Queue } = await import('bullmq');
-      const { connection } = await import('./redis-connection');
-      const queue = new Queue(queueName, { connection });
+      // 传连接配置（而非 ioredis 实例），由 BullMQ 内部管理连接，
+      // 同时规避不同依赖树中 ioredis 版本实例的类型不兼容
+      const queue = new Queue(queueName, {
+        connection: {
+          host: process.env.REDIS_HOST || 'localhost',
+          port: Number(process.env.REDIS_PORT || '6379'),
+          maxRetriesPerRequest: null,
+        },
+      });
 
       await queue.add(queueName, {}, { jobId });
 
